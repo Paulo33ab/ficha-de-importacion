@@ -10,6 +10,7 @@ export interface ImportProduct {
   pLink: string;
   pExtra: string;
   pAdditionalInfo: string;
+  pCurrency: string;
   pImages: string[];
 }
 

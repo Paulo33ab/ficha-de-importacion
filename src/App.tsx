@@ -42,6 +42,7 @@ export default function App() {
     pLink: '',
     pExtra: '',
     pAdditionalInfo: '',
+    pCurrency: '',
     pImages: []
   });
   const fileInputRef = useRef<HTMLInputElement>(null);
@@ -89,6 +90,7 @@ export default function App() {
       pLink: formData.pLink || '',
       pExtra: formData.pExtra || '',
       pAdditionalInfo: formData.pAdditionalInfo || '',
+      pCurrency: formData.pCurrency || '',
       pImages: formData.pImages || []
     };
 
@@ -104,6 +106,7 @@ export default function App() {
       pLink: '',
       pExtra: '',
       pAdditionalInfo: '',
+      pCurrency: '',
       pImages: []
     });
     if (fileInputRef.current) fileInputRef.current.value = '';
@@ -210,7 +213,7 @@ export default function App() {
             ['Especificaciones', p.pSpecs || '-'],
             ['Puntos Clave / Cert.', p.pKeys || '-'],
             ['Marcas de Referencia', p.pBrands || '-'],
-            ['Precio Ref (USD)', p.pPrice ? `$${p.pPrice}` : '-'],
+            ['Precio (IVA incluido)', p.pPrice ? `${p.pPrice} ${p.pCurrency || ''}`.trim() : '-'],
             ['Cantidad Estimada', p.pQty || '-'],
             ['URL de Referencia', p.pLink || '-'],
             ['Info. Adicional', p.pAdditionalInfo || '-']
@@ -229,7 +232,28 @@ export default function App() {
           });
 
           // @ts-ignore
-          currentY = doc.lastAutoTable.finalY + 12;
+          currentY = doc.lastAutoTable.finalY + 8;
+
+          if (p.pImages && p.pImages.length > 0) {
+            if (currentY + 40 > 280) {
+              doc.addPage();
+              currentY = 20;
+            }
+            doc.setFontSize(9);
+            doc.setTextColor(100, 100, 100);
+            doc.text('Imágenes de Referencia:', 14, currentY);
+            currentY += 4;
+            
+            p.pImages.forEach((img, imgIdx) => {
+              const xInfo = 14 + (imgIdx * 34);
+              try {
+                doc.addImage(img, 'JPEG', xInfo, currentY, 30, 30);
+              } catch (e) {
+                console.error("Error adding image to PDF", e);
+              }
+            });
+            currentY += 38;
+          }
 
           if (currentY > 260 && i < products.length - 1) {
             doc.addPage();
@@ -297,7 +321,7 @@ export default function App() {
                     className="input-field"
                   />
                 </div>
-                <div className="grid grid-cols-2 gap-4">
+                <div className="grid grid-cols-3 gap-4">
                   <div>
                     <label className="label-tech block mb-2">Cant. Estimada</label>
                     <input
@@ -310,18 +334,26 @@ export default function App() {
                     />
                   </div>
                   <div>
-                    <label className="label-tech block mb-2">Precio Ref (USD)</label>
-                    <div className="relative">
-                      <span className="absolute left-3 top-1/2 -translate-y-1/2 text-zinc-400 text-xs">$</span>
-                      <input
-                        type="text"
-                        name="pPrice"
-                        value={formData.pPrice}
-                        onChange={handleInputChange}
-                        placeholder="0.00"
-                        className="input-field pl-6 border-zinc-200"
-                      />
-                    </div>
+                    <label className="label-tech block mb-2">Precio (IVA inc.)</label>
+                    <input
+                      type="text"
+                      name="pPrice"
+                      value={formData.pPrice}
+                      onChange={handleInputChange}
+                      placeholder="0.00"
+                      className="input-field"
+                    />
+                  </div>
+                  <div>
+                    <label className="label-tech block mb-2">Moneda</label>
+                    <input
+                      type="text"
+                      name="pCurrency"
+                      value={formData.pCurrency}
+                      onChange={handleInputChange}
+                      placeholder="USD, ARS..."
+                      className="input-field"
+                    />
                   </div>
                 </div>
                 <div>
@@ -467,7 +499,7 @@ export default function App() {
                         <div>
                           <h4 className="font-semibold text-black-nero text-sm tracking-wide">{p.pName}</h4>
                           <span className="text-[10px] text-storm-dust font-bold tracking-tight">
-                            {p.pQty || 'Cant. no espec.'} | Ref: {p.pPrice ? `$${p.pPrice}` : '-'}
+                            {p.pQty || 'Cant. no espec.'} | Ref: {p.pPrice ? `${p.pPrice} ${p.pCurrency || ''}`.trim() : '-'}
                           </span>
                         </div>
                         <div className="flex items-center gap-1 opacity-0 group-hover:opacity-100 transition-opacity">
@@ -608,7 +640,7 @@ export default function App() {
                         className="input-field"
                       />
                     </div>
-                    <div className="grid grid-cols-2 gap-4">
+                    <div className="grid grid-cols-3 gap-4">
                       <div>
                         <label className="label-tech block mb-2 font-black">Cantidad</label>
                         <input
@@ -619,11 +651,20 @@ export default function App() {
                         />
                       </div>
                       <div>
-                        <label className="label-tech block mb-2 font-black">Precio Ref (USD)</label>
+                        <label className="label-tech block mb-2 font-black">Precio (IVA inc.)</label>
                         <input
                           type="text"
                           value={editingProduct.pPrice}
                           onChange={(e) => setEditingProduct({ ...editingProduct, pPrice: e.target.value })}
+                          className="input-field"
+                        />
+                      </div>
+                      <div>
+                        <label className="label-tech block mb-2 font-black">Moneda</label>
+                        <input
+                          type="text"
+                          value={editingProduct.pCurrency || ''}
+                          onChange={(e) => setEditingProduct({ ...editingProduct, pCurrency: e.target.value })}
                           className="input-field"
                         />
                       </div>
