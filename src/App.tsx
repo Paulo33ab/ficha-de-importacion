@@ -28,8 +28,28 @@ import { ImportProduct } from './types';
 const STORAGE_KEY = 'mingta_ficha_data';
 
 export default function App() {
-  const [products, setProducts] = useState<ImportProduct[]>([]);
-  const [clientName, setClientName] = useState('');
+  const [products, setProducts] = useState<ImportProduct[]>(() => {
+    const saved = localStorage.getItem(STORAGE_KEY);
+    if (saved) {
+      try {
+        return JSON.parse(saved).products || [];
+      } catch (e) {
+        return [];
+      }
+    }
+    return [];
+  });
+  const [clientName, setClientName] = useState(() => {
+    const saved = localStorage.getItem(STORAGE_KEY);
+    if (saved) {
+      try {
+        return JSON.parse(saved).clientName || '';
+      } catch (e) {
+        return '';
+      }
+    }
+    return '';
+  });
   const [editingProduct, setEditingProduct] = useState<ImportProduct | null>(null);
   const [formData, setFormData] = useState<Partial<ImportProduct>>({
     pName: '',
@@ -47,20 +67,6 @@ export default function App() {
   });
   const fileInputRef = useRef<HTMLInputElement>(null);
   const editFileInputRef = useRef<HTMLInputElement>(null);
-
-  // Load from local storage
-  useEffect(() => {
-    const saved = localStorage.getItem(STORAGE_KEY);
-    if (saved) {
-      try {
-        const parsed = JSON.parse(saved);
-        if (parsed.products) setProducts(parsed.products);
-        if (parsed.clientName) setClientName(parsed.clientName);
-      } catch (e) {
-        console.error('Error loading saved data', e);
-      }
-    }
-  }, []);
 
   // Save to local storage
   useEffect(() => {
@@ -549,9 +555,6 @@ export default function App() {
                   <Download className="w-4 h-4" /> Descargar Ficha en PDF
                 </button>
               </div>
-              <p className="text-[9px] text-center text-storm-dust italic">
-                * El PDF se generará con diseño corporativo
-              </p>
             </div>
             
             {/* Decorator */}
