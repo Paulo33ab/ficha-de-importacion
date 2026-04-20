@@ -556,6 +556,9 @@ export default function App() {
                   <Download className="w-4 h-4" /> Descargar Ficha en PDF
                 </button>
               </div>
+              <p className="text-[9px] leading-tight text-center text-storm-dust italic mt-2">
+                * Tus datos se guardan en este dispositivo. Si borras el historial o navegas en incógnito, la lista se vaciará.
+              </p>
             </div>
             
             {/* Decorator */}
