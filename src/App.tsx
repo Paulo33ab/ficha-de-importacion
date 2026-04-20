@@ -3,7 +3,7 @@
  * SPDX-License-Identifier: Apache-2.0
  */
 
-import React, { useState, useEffect } from 'react';
+import React, { useState, useEffect, useRef } from 'react';
 import { motion, AnimatePresence } from 'motion/react';
 import { 
   Plus, 
@@ -19,7 +19,9 @@ import {
   Stamp,
   ExternalLink,
   ClipboardList,
-  Download
+  Download,
+  ImagePlus,
+  X
 } from 'lucide-react';
 import { ImportProduct } from './types';
 
@@ -38,8 +40,12 @@ export default function App() {
     pPrice: '',
     pQty: '',
     pLink: '',
-    pExtra: ''
+    pExtra: '',
+    pAdditionalInfo: '',
+    pImages: []
   });
+  const fileInputRef = useRef<HTMLInputElement>(null);
+  const editFileInputRef = useRef<HTMLInputElement>(null);
 
   // Load from local storage
   useEffect(() => {
@@ -81,7 +87,9 @@ export default function App() {
       pPrice: formData.pPrice || '',
       pQty: formData.pQty || '',
       pLink: formData.pLink || '',
-      pExtra: formData.pExtra || ''
+      pExtra: formData.pExtra || '',
+      pAdditionalInfo: formData.pAdditionalInfo || '',
+      pImages: formData.pImages || []
     };
 
     setProducts(prev => [...prev, newProduct]);
@@ -94,8 +102,11 @@ export default function App() {
       pPrice: '',
       pQty: '',
       pLink: '',
-      pExtra: ''
+      pExtra: '',
+      pAdditionalInfo: '',
+      pImages: []
     });
+    if (fileInputRef.current) fileInputRef.current.value = '';
   };
 
   const removeProduct = (id: string) => {
@@ -113,7 +124,43 @@ export default function App() {
   };
 
   const openEditModal = (product: ImportProduct) => {
-    setEditingProduct({ ...product });
+    setEditingProduct({ ...product, pImages: product.pImages || [], pAdditionalInfo: product.pAdditionalInfo || '' });
+  };
+
+  const handleImageUpload = (e: React.ChangeEvent<HTMLInputElement>, target: 'form' | 'edit') => {
+    const files = e.target.files;
+    if (!files) return;
+
+    const currentImages = target === 'form' ? (formData.pImages || []) : (editingProduct?.pImages || []);
+    const remaining = 5 - currentImages.length;
+
+    if (remaining <= 0) {
+      alert('Máximo 5 imágenes por producto.');
+      return;
+    }
+
+    const filesToProcess = Array.from(files).slice(0, remaining);
+
+    filesToProcess.forEach(file => {
+      const reader = new FileReader();
+      reader.onload = (ev) => {
+        const base64 = ev.target?.result as string;
+        if (target === 'form') {
+          setFormData(prev => ({ ...prev, pImages: [...(prev.pImages || []), base64] }));
+        } else if (editingProduct) {
+          setEditingProduct(prev => prev ? { ...prev, pImages: [...(prev.pImages || []), base64] } : prev);
+        }
+      };
+      reader.readAsDataURL(file);
+    });
+  };
+
+  const removeImage = (index: number, target: 'form' | 'edit') => {
+    if (target === 'form') {
+      setFormData(prev => ({ ...prev, pImages: (prev.pImages || []).filter((_, i) => i !== index) }));
+    } else if (editingProduct) {
+      setEditingProduct(prev => prev ? { ...prev, pImages: (prev.pImages || []).filter((_, i) => i !== index) } : prev);
+    }
   };
 
   const generatePDF = () => {
@@ -165,7 +212,8 @@ export default function App() {
             ['Marcas de Referencia', p.pBrands || '-'],
             ['Precio Ref (USD)', p.pPrice ? `$${p.pPrice}` : '-'],
             ['Cantidad Estimada', p.pQty || '-'],
-            ['URL de Referencia', p.pLink || '-']
+            ['URL de Referencia', p.pLink || '-'],
+            ['Info. Adicional', p.pAdditionalInfo || '-']
           ];
 
           autoTable(doc, {
@@ -302,7 +350,7 @@ export default function App() {
                   />
                 </div>
                 <div>
-                  <label className="label-tech block mb-2">Puntos Clave / Certificaciones</label>
+                  <label className="label-tech block mb-2">Puntos clave que debe cumplir el producto / Certificaciones</label>
                   <input
                     type="text"
                     name="pKeys"
@@ -323,6 +371,54 @@ export default function App() {
                     className="input-field"
                   />
                 </div>
+              </div>
+            </div>
+
+            {/* Full-width additional fields */}
+            <div className="mt-6 space-y-5">
+              <div>
+                <label className="label-tech block mb-2">Información Relevante Adicional</label>
+                <textarea
+                  name="pAdditionalInfo"
+                  value={formData.pAdditionalInfo}
+                  onChange={handleInputChange}
+                  rows={3}
+                  placeholder="Normas específicas, requisitos especiales, observaciones..."
+                  className="input-field h-20 resize-none"
+                />
+              </div>
+              <div>
+                <label className="label-tech block mb-2">Imágenes de Referencia (máx. 5)</label>
+                <div className="flex flex-wrap gap-3 mb-3">
+                  {(formData.pImages || []).map((img, idx) => (
+                    <div key={idx} className="relative w-20 h-20 rounded-lg overflow-hidden border border-zinc-200 group">
+                      <img src={img} alt={`Ref ${idx + 1}`} className="w-full h-full object-cover" />
+                      <button
+                        onClick={() => removeImage(idx, 'form')}
+                        className="absolute top-0.5 right-0.5 bg-black/60 text-white rounded-full p-0.5 opacity-0 group-hover:opacity-100 transition-opacity"
+                      >
+                        <X className="w-3 h-3" />
+                      </button>
+                    </div>
+                  ))}
+                </div>
+                {(formData.pImages || []).length < 5 && (
+                  <button
+                    type="button"
+                    onClick={() => fileInputRef.current?.click()}
+                    className="flex items-center gap-2 text-xs text-storm-dust border border-dashed border-zinc-300 rounded-lg px-4 py-3 hover:border-retro-orange hover:text-retro-orange transition-colors"
+                  >
+                    <ImagePlus className="w-4 h-4" /> Agregar imágenes
+                  </button>
+                )}
+                <input
+                  ref={fileInputRef}
+                  type="file"
+                  accept="image/*"
+                  multiple
+                  className="hidden"
+                  onChange={(e) => handleImageUpload(e, 'form')}
+                />
               </div>
             </div>
 
@@ -553,7 +649,7 @@ export default function App() {
                       />
                     </div>
                     <div>
-                      <label className="label-tech block mb-2 font-black">Certificaciones</label>
+                      <label className="label-tech block mb-2 font-black">Puntos clave / Certificaciones</label>
                       <input
                         type="text"
                         value={editingProduct.pKeys}
@@ -570,6 +666,52 @@ export default function App() {
                         className="input-field"
                       />
                     </div>
+                  </div>
+                </div>
+                {/* Full-width fields in modal */}
+                <div className="mt-6 space-y-5">
+                  <div>
+                    <label className="label-tech block mb-2 font-black">Información Relevante Adicional</label>
+                    <textarea
+                      value={editingProduct.pAdditionalInfo || ''}
+                      onChange={(e) => setEditingProduct({ ...editingProduct, pAdditionalInfo: e.target.value })}
+                      rows={3}
+                      placeholder="Normas específicas, requisitos especiales..."
+                      className="input-field h-20 resize-none"
+                    />
+                  </div>
+                  <div>
+                    <label className="label-tech block mb-2 font-black">Imágenes de Referencia (máx. 5)</label>
+                    <div className="flex flex-wrap gap-3 mb-3">
+                      {(editingProduct.pImages || []).map((img, idx) => (
+                        <div key={idx} className="relative w-20 h-20 rounded-lg overflow-hidden border border-zinc-200 group">
+                          <img src={img} alt={`Ref ${idx + 1}`} className="w-full h-full object-cover" />
+                          <button
+                            onClick={() => removeImage(idx, 'edit')}
+                            className="absolute top-0.5 right-0.5 bg-black/60 text-white rounded-full p-0.5 opacity-0 group-hover:opacity-100 transition-opacity"
+                          >
+                            <X className="w-3 h-3" />
+                          </button>
+                        </div>
+                      ))}
+                    </div>
+                    {(editingProduct.pImages || []).length < 5 && (
+                      <button
+                        type="button"
+                        onClick={() => editFileInputRef.current?.click()}
+                        className="flex items-center gap-2 text-xs text-storm-dust border border-dashed border-zinc-300 rounded-lg px-4 py-3 hover:border-retro-orange hover:text-retro-orange transition-colors"
+                      >
+                        <ImagePlus className="w-4 h-4" /> Agregar imágenes
+                      </button>
+                    )}
+                    <input
+                      ref={editFileInputRef}
+                      type="file"
+                      accept="image/*"
+                      multiple
+                      className="hidden"
+                      onChange={(e) => handleImageUpload(e, 'edit')}
+                    />
                   </div>
                 </div>
               </div>

@@ -9,6 +9,8 @@ export interface ImportProduct {
   pQty: string;
   pLink: string;
   pExtra: string;
+  pAdditionalInfo: string;
+  pImages: string[];
 }
 
 export interface ImportFicha {
