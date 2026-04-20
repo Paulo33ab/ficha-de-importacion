@@ -18,7 +18,8 @@ import {
   Link as LinkIcon, 
   Stamp,
   ExternalLink,
-  ClipboardList
+  ClipboardList,
+  Download
 } from 'lucide-react';
 import { ImportProduct } from './types';
 
@@ -115,37 +116,86 @@ export default function App() {
     setEditingProduct({ ...product });
   };
 
-  const sendEmail = (toEmail: string) => {
+  const generatePDF = () => {
     if (products.length === 0) {
       alert('La lista de productos está vacía.');
       return;
     }
 
-    const client = clientName || 'Cliente No Identificado';
-    const bcc = 'michelle.lincow@mingtagrouplatam.com,santiago.cirillo@mingtagrouplatam.com,administracion@mingtagrouplatam.com,paulo.buttice@mingtagrouplatam.com';
-    const subject = `Nueva Ficha de Intención de Importación - ${client}`;
-    
-    let body = `SOLICITUD DE COTIZACIÓN DE IMPORTACIÓN\n\n`;
-    body += `Cliente/Empresa: ${client}\n`;
-    body += `Fecha: ${new Date().toLocaleDateString()}\n\n`;
-    body += `--- DETALLE DE PRODUCTOS ---\n\n`;
+    import('jspdf').then(({ jsPDF }) => {
+      import('jspdf-autotable').then(({ default: autoTable }) => {
+        const doc = new jsPDF();
+        const client = clientName || 'Cliente No Identificado';
+        
+        // Add Header
+        doc.setFillColor(232, 81, 18); // Retro Orange
+        doc.rect(0, 0, 210, 20, 'F');
+        
+        doc.setTextColor(255, 255, 255);
+        doc.setFontSize(14);
+        doc.setFont('helvetica', 'bold');
+        doc.text('FICHA DE INTENCIÓN DE IMPORTACIÓN', 14, 13);
+        
+        // Add Subheader / Client Info
+        doc.setTextColor(80, 80, 80);
+        doc.setFontSize(10);
+        doc.text(`CLIENTE / EMPRESA: ${client.toUpperCase()}`, 14, 30);
+        doc.text(`FECHA: ${new Date().toLocaleDateString()}`, 160, 30);
+        
+        doc.setDrawColor(200, 200, 200);
+        doc.line(14, 34, 196, 34);
 
-    products.forEach((p, i) => {
-      body += `PRODUCTO ${i + 1}:\n`;
-      body += `- Nombre: ${p.pName}\n`;
-      body += `- Nombre EN: ${p.pEnglish || 'N/A'}\n`;
-      body += `- Especificaciones: ${p.pSpecs || 'N/A'}\n`;
-      body += `- Puntos Clave: ${p.pKeys || 'N/A'}\n`;
-      body += `- Marcas Ref: ${p.pBrands || 'N/A'}\n`;
-      body += `- Precio Ref: ${p.pPrice || 'N/A'}\n`;
-      body += `- Cantidad: ${p.pQty || 'N/A'}\n`;
-      body += `- Link: ${p.pLink || 'N/A'}\n`;
-      body += `- Certificaciones/Otros: ${p.pExtra || 'N/A'}\n\n`;
-      body += `----------------------------\n\n`;
+        let currentY = 42;
+
+        products.forEach((p, i) => {
+          doc.setFillColor(245, 245, 245);
+          doc.rect(14, currentY, 182, 8, 'F');
+          
+          doc.setTextColor(30, 30, 30);
+          doc.setFont('helvetica', 'bold');
+          doc.setFontSize(11);
+          doc.text(`PRODUCTO ${i + 1}: ${p.pName.toUpperCase()}`, 16, currentY + 6);
+          currentY += 12;
+
+          const data = [
+            ['Nombre Comercial', p.pName],
+            ['Nombre en Inglés', p.pEnglish || '-'],
+            ['Especificaciones', p.pSpecs || '-'],
+            ['Puntos Clave / Cert.', p.pKeys || '-'],
+            ['Marcas de Referencia', p.pBrands || '-'],
+            ['Precio Ref (USD)', p.pPrice ? `$${p.pPrice}` : '-'],
+            ['Cantidad Estimada', p.pQty || '-'],
+            ['URL de Referencia', p.pLink || '-']
+          ];
+
+          autoTable(doc, {
+            startY: currentY,
+            body: data,
+            theme: 'plain',
+            styles: { fontSize: 9, cellPadding: 2 },
+            columnStyles: {
+              0: { fontStyle: 'bold', textColor: [100, 100, 100], cellWidth: 50 },
+              1: { textColor: [40, 40, 40] }
+            },
+            margin: { left: 14, right: 14 }
+          });
+
+          // @ts-ignore
+          currentY = doc.lastAutoTable.finalY + 12;
+
+          if (currentY > 260 && i < products.length - 1) {
+            doc.addPage();
+            currentY = 20;
+          }
+        });
+
+        doc.setFontSize(8);
+        doc.setTextColor(150, 150, 150);
+        doc.text('Generado por Mingta Group Latam App', 14, 290);
+
+        doc.save(`Ficha_Importacion_${client.replace(/\s+/g, '_')}.pdf`);
+      });
     });
-
-    const mailtoUrl = `mailto:${toEmail}?bcc=${bcc}&subject=${encodeURIComponent(subject)}&body=${encodeURIComponent(body)}`;
-    window.location.href = mailtoUrl;
   };
 
   return (
@@ -365,20 +415,14 @@ export default function App() {
 
               <div className="grid grid-cols-1 gap-4">
                 <button
-                  onClick={() => sendEmail('timoteo.monson@mingtagrouplatam.com')}
+                  onClick={generatePDF}
                   className="bg-black-nero text-white hover:bg-retro-orange py-4 rounded-xl text-[11px] font-bold uppercase tracking-wider transition-all active:scale-95 flex items-center justify-center gap-3 shadow-lg"
                 >
-                  <Send className="w-4 h-4" /> Enviar por correo a Timoteo Monsón
-                </button>
-                <button
-                  onClick={() => sendEmail('martin.almiron@mingtagrouplatam.com')}
-                  className="bg-black-nero text-white hover:bg-retro-orange py-4 rounded-xl text-[11px] font-bold uppercase tracking-wider transition-all active:scale-95 flex items-center justify-center gap-3 shadow-lg"
-                >
-                  <Send className="w-4 h-4" /> Enviar por correo a Martín Almirón
+                  <Download className="w-4 h-4" /> Descargar Ficha en PDF
                 </button>
               </div>
               <p className="text-[9px] text-center text-storm-dust italic">
-                * Se enviará copia automática a Gerencia y Administración
+                * El PDF se generará con diseño corporativo
               </p>
             </div>
             
