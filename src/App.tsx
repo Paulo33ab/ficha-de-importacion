@@ -201,15 +201,15 @@ export default function App() {
   return (
     <div className="min-h-screen bg-light-bg text-black-nero p-6 md:p-10 flex flex-col font-sans">
       {/* Header */}
-      <header className="flex flex-col md:flex-row justify-between items-end border-b-2 border-zinc-200 pb-8 mb-12">
+      <header className="flex flex-col md:flex-row justify-between items-center border-b border-zinc-200 pb-6 mb-10">
         <div className="text-left">
-          <h2 className="text-xl md:text-3xl font-serif text-black-nero tracking-tight leading-tight uppercase font-black">Ficha de Intención de Importación</h2>
+          <h2 className="text-2xl md:text-3xl font-serif text-black-nero tracking-normal font-medium">Ficha de Intención de Importación</h2>
         </div>
-        <div className="flex items-center gap-5 mt-6 md:mt-0">
+        <div className="flex items-center mt-6 md:mt-0">
           <img 
             src="https://static.wixstatic.com/media/f0de02_bdc4442ec101402d919878e0530c3d03~mv2.png/v1/fill/w_308,h_90,al_c,q_85,usm_0.66_1.00_0.01,enc_avif,quality_auto/LOGOG-PARA-LUCRECIA.png" 
             alt="Mingta Group" 
-            className="h-16 object-contain active:scale-95 transition-transform cursor-pointer"
+            className="h-10 opacity-90 object-contain hover:opacity-100 transition-opacity"
             referrerPolicy="no-referrer"
           />
         </div>
