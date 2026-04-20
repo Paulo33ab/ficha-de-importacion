@@ -508,17 +508,18 @@ export default function App() {
                             {p.pQty || 'Cant. no espec.'} | Ref: {p.pPrice ? `${p.pPrice} ${p.pCurrency || ''}`.trim() : '-'}
                           </span>
                         </div>
-                        <div className="flex items-center gap-1 opacity-0 group-hover:opacity-100 transition-opacity">
+                        <div className="flex items-center gap-2">
                           <button
                             onClick={() => openEditModal(p)}
-                            className="text-zinc-300 hover:text-retro-orange transition-colors p-1"
+                            className="flex items-center gap-1 text-[10px] uppercase font-bold tracking-widest text-zinc-400 hover:text-retro-orange transition-colors px-2 py-1 rounded hover:bg-zinc-100"
                             title="Editar"
                           >
-                            <FileText className="w-4 h-4" />
+                            <FileText className="w-3.5 h-3.5" />
+                            Editar
                           </button>
                           <button
                             onClick={() => removeProduct(p.id)}
-                            className="text-zinc-300 hover:text-red-500 transition-colors p-1"
+                            className="text-zinc-400 hover:text-red-500 transition-colors p-1.5 rounded hover:bg-red-50"
                             title="Eliminar"
                           >
                             <Trash2 className="w-4 h-4" />
