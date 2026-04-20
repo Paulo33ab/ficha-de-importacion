@@ -71,7 +71,7 @@ export default function App() {
     }
 
     const newProduct: ImportProduct = {
-      id: crypto.randomUUID(),
+      id: Date.now().toString(36) + Math.random().toString(36).substring(2),
       pName: formData.pName!,
       pEnglish: formData.pEnglish || '',
       pSpecs: formData.pSpecs || '',
