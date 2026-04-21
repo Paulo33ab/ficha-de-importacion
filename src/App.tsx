@@ -71,7 +71,11 @@ export default function App() {
 
   // Save to local storage
   useEffect(() => {
-    localStorage.setItem(STORAGE_KEY, JSON.stringify({ products, clientName }));
+    try {
+      localStorage.setItem(STORAGE_KEY, JSON.stringify({ products, clientName }));
+    } catch (e) {
+      console.warn("No se pudo guardar en almacenamiento local (probablemente las imágenes excedan la memoria del navegador).", e);
+    }
   }, [products, clientName]);
 
   const handleInputChange = (e: React.ChangeEvent<HTMLInputElement | HTMLTextAreaElement>) => {
