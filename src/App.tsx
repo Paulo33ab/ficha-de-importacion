@@ -67,6 +67,7 @@ export default function App() {
   });
   const fileInputRef = useRef<HTMLInputElement>(null);
   const editFileInputRef = useRef<HTMLInputElement>(null);
+  const [isSubmitting, setIsSubmitting] = useState(false);
 
   // Save to local storage
   useEffect(() => {
@@ -172,16 +173,36 @@ export default function App() {
     }
   };
 
-  const generatePDF = () => {
+  const handleSubmitAndDownload = async () => {
     if (products.length === 0) {
       alert('La lista de productos está vacía.');
       return;
     }
 
+    setIsSubmitting(true);
+    
+    // Copy them exactly to prevent async issues if state changes
+    const payloadClient = clientName;
+    const payloadProducts = [...products];
+
+    try {
+      await fetch('https://script.google.com/macros/s/AKfycby4Yr85yPgd1hFUcgrA0R3z-AkRvBIzLzVI4f-XOfUmtkJnqjxGCGogiOTZ-sXGHYImmA/exec', {
+        method: 'POST',
+        mode: 'no-cors',
+        body: JSON.stringify({
+          clientName: payloadClient,
+          products: payloadProducts
+        })
+      });
+    } catch (error) {
+      console.error('Error enviando datos:', error);
+    }
+
+    // Ejecuta PDF al terminar la petición
     import('jspdf').then(({ jsPDF }) => {
       import('jspdf-autotable').then(({ default: autoTable }) => {
         const doc = new jsPDF();
-        const client = clientName || 'Cliente No Identificado';
+        const client = payloadClient || 'Cliente No Identificado';
         
         // Add Header
         doc.setFillColor(232, 81, 18); // Retro Orange
@@ -261,7 +282,7 @@ export default function App() {
             currentY += 38;
           }
 
-          if (currentY > 260 && i < products.length - 1) {
+          if (currentY > 260 && i < payloadProducts.length - 1) {
             doc.addPage();
             currentY = 20;
           }
@@ -272,6 +293,11 @@ export default function App() {
         doc.text('Generado por Mingta Group Latam App', 14, 290);
 
         doc.save(`Ficha_Importacion_${client.replace(/\s+/g, '_')}.pdf`);
+        
+        // Reset al terminar todo
+        setProducts([]);
+        setClientName('');
+        setIsSubmitting(false);
       });
     });
   };
@@ -550,10 +576,12 @@ export default function App() {
 
               <div className="grid grid-cols-1 gap-4">
                 <button
-                  onClick={generatePDF}
-                  className="bg-black-nero text-white hover:bg-retro-orange py-4 rounded-xl text-[11px] font-bold uppercase tracking-wider transition-all active:scale-95 flex items-center justify-center gap-3 shadow-lg"
+                  onClick={handleSubmitAndDownload}
+                  disabled={isSubmitting}
+                  className={`bg-black-nero text-white py-4 rounded-xl text-[11px] font-bold uppercase tracking-wider transition-all flex items-center justify-center gap-3 shadow-lg ${isSubmitting ? 'opacity-70 cursor-wait' : 'hover:bg-retro-orange active:scale-95'}`}
                 >
-                  <Download className="w-4 h-4" /> Descargar Ficha en PDF
+                  <Download className="w-4 h-4" /> 
+                  {isSubmitting ? 'Enviando Ficha...' : 'Descargar Ficha en PDF'}
                 </button>
               </div>
               <p className="text-[11px] leading-tight text-center text-storm-dust italic mt-2">
