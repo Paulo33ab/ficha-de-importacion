@@ -11,6 +11,7 @@ export interface ImportProduct {
   pExtra: string;
   pAdditionalInfo: string;
   pCurrency: string;
+  pDriveLink?: string;
   pImages: string[];
 }
 

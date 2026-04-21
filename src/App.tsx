@@ -102,6 +102,7 @@ export default function App() {
       pExtra: formData.pExtra || '',
       pAdditionalInfo: formData.pAdditionalInfo || '',
       pCurrency: formData.pCurrency || '',
+      pDriveLink: formData.pDriveLink || '',
       pImages: formData.pImages || []
     };
 
@@ -118,6 +119,7 @@ export default function App() {
       pExtra: '',
       pAdditionalInfo: '',
       pCurrency: '',
+      pDriveLink: '',
       pImages: []
     });
     if (fileInputRef.current) fileInputRef.current.value = '';
@@ -154,6 +156,16 @@ export default function App() {
     }
 
     const filesToProcess = Array.from(files).slice(0, remaining);
+    
+    // Calcular peso actual de imágenes en bytes (aprox) + peso entrante
+    const currentSize = currentImages.reduce((sum, img) => sum + (img.length * 0.75), 0);
+    const incomingSize = filesToProcess.reduce((sum, f) => sum + f.size, 0);
+
+    if (currentSize + incomingSize > 5 * 1024 * 1024) {
+      alert("El peso total de las imágenes supera el límite de 5 MB por producto para evitar la pérdida de datos al refrescar. Por favor, utilizá el campo de 'Enlace de Carpeta de Google Drive' (abajo) para fotos pesadas.");
+      if (e.target) e.target.value = '';
+      return;
+    }
 
     filesToProcess.forEach(file => {
       const reader = new FileReader();
@@ -187,7 +199,15 @@ export default function App() {
     
     // Copy them exactly to prevent async issues if state changes
     const payloadClient = clientName;
-    const payloadProducts = [...products];
+    // Preparar Productos mapeados
+    const payloadProducts = products.map(p => {
+       // Fusionar DriveLink en la Info Adicional para no romper el esquema de Sheets actual
+       let additionalInfoMerged = p.pAdditionalInfo || '';
+       if (p.pDriveLink) {
+         additionalInfoMerged += `\n[MÁS FOTOS EN DRIVE]: ${p.pDriveLink}`;
+       }
+       return { ...p, pAdditionalInfo: additionalInfoMerged.trim() };
+    });
 
     try {
       await fetch('https://script.google.com/macros/s/AKfycby4Yr85yPgd1hFUcgrA0R3z-AkRvBIzLzVI4f-XOfUmtkJnqjxGCGogiOTZ-sXGHYImmA/exec', {
@@ -487,6 +507,22 @@ export default function App() {
                   className="hidden"
                   onChange={(e) => handleImageUpload(e, 'form')}
                 />
+                <p className="text-[10px] text-zinc-400 mt-2 italic">Solo si la suma de sus pesos no supera 5 MB.</p>
+              </div>
+
+              <div className="bg-zinc-50 border border-zinc-200 p-4 rounded-lg">
+                <label className="label-tech block mb-2 text-retro-orange">¿Tenés muchas fotos o son muy pesadas? Pegá tu enlace de Drive</label>
+                <input
+                  type="url"
+                  name="pDriveLink"
+                  value={formData.pDriveLink}
+                  onChange={handleInputChange}
+                  placeholder="https://drive.google.com/drive/folders/..."
+                  className="input-field mb-2 bg-white"
+                />
+                <p className="text-[10px] text-storm-dust font-medium leading-relaxed">
+                  * NOTA IMPORTANTE: Si las fotos que requerís mostrar superan el límite de peso local, guardalas en una carpeta de Google Drive propia. Pegá acá su enlace verificando estrictamente que el acceso esté en <span className="font-bold underline text-retro-orange">"Cualquier usuario que tenga el vínculo"</span>.
+                </p>
               </div>
             </div>
 
